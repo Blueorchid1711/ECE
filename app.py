@@ -1,125 +1,74 @@
 # ============================================================
-# 🦠 COVID-19 X-Ray Classification Web App
-# Built with Streamlit | Deployed on Hugging Face / Streamlit Cloud
+# 🦠 COVID-19 / Pneumonia / Normal Classifier - Transfer Learning
 # ============================================================
 
-import streamlit as st
-import numpy as np
-import pandas as pd
-from tensorflow.keras.models import load_model
-from PIL import Image
+import tensorflow as tf
+from tensorflow.keras.preprocessing.image import ImageDataGenerator
+from tensorflow.keras.applications import MobileNetV2
+from tensorflow.keras.models import Model
+from tensorflow.keras.layers import Dense, GlobalAveragePooling2D, Dropout
+from tensorflow.keras.optimizers import Adam
 
 # ============================================================
-# 🎨 PAGE CONFIGURATION
+# ⚙️ DATASET PREPARATION
 # ============================================================
-st.set_page_config(
-    page_title="COVID-19 X-Ray Classifier",
-    page_icon="🩺",
-    layout="centered"
+train_path = "/content/dataset/train"
+val_path = "/content/dataset/val"
+
+# Augment + balance
+train_datagen = ImageDataGenerator(
+    rescale=1./255,
+    rotation_range=20,
+    width_shift_range=0.1,
+    height_shift_range=0.1,
+    shear_range=0.1,
+    zoom_range=0.1,
+    horizontal_flip=True,
+    fill_mode='nearest'
+)
+
+val_datagen = ImageDataGenerator(rescale=1./255)
+
+train_gen = train_datagen.flow_from_directory(
+    train_path,
+    target_size=(128,128),
+    batch_size=16,
+    class_mode='categorical'
+)
+
+val_gen = val_datagen.flow_from_directory(
+    val_path,
+    target_size=(128,128),
+    batch_size=16,
+    class_mode='categorical'
 )
 
 # ============================================================
-# 🏥 MAIN HEADING
+# 🧩 MODEL
 # ============================================================
-st.title("🩺 COVID-19 X-Ray Classification App")
-st.markdown(
-    """
-    ### 🔍 Detect COVID-19, Pneumonia, or Normal Chest X-Rays  
-    Upload a **chest X-ray image**, and the trained deep learning model will classify it into one of three categories:
-    - 🧍 **Normal**
-    - 🦠 **COVID-19**
-    - 💨 **Pneumonia**
+base_model = MobileNetV2(weights='imagenet', include_top=False, input_shape=(128,128,3))
+for layer in base_model.layers:
+    layer.trainable = False  # freeze pretrained layers
 
-    ---
-    """
+x = base_model.output
+x = GlobalAveragePooling2D()(x)
+x = Dropout(0.3)(x)
+x = Dense(128, activation='relu')(x)
+output = Dense(3, activation='softmax')(x)
+
+model = Model(inputs=base_model.input, outputs=output)
+model.compile(optimizer=Adam(learning_rate=1e-4), loss='categorical_crossentropy', metrics=['accuracy'])
+
+# ============================================================
+# 🚀 TRAIN
+# ============================================================
+history = model.fit(
+    train_gen,
+    epochs=10,
+    validation_data=val_gen
 )
 
 # ============================================================
-# ⚙️ LOAD TRAINED MODEL
+# 💾 SAVE MODEL
 # ============================================================
-st.sidebar.header("⚙️ Model Information")
-
-try:
-    model = load_model("final_model.keras")
-    st.sidebar.success("✅ Model loaded successfully!")
-except Exception as e:
-    st.sidebar.error("❌ Failed to load model.")
-    st.stop()
-
-# Define class labels (adjust if needed)
-CLASS_NAMES = ['Normal', 'COVID-19', 'Pneumonia']
-st.sidebar.write("**Classes:**", ", ".join(CLASS_NAMES))
-st.sidebar.markdown("---")
-
-# ============================================================
-# 📤 IMAGE UPLOAD SECTION
-# ============================================================
-uploaded_file = st.file_uploader(
-    "📤 Upload a Chest X-Ray Image",
-    type=["jpg", "jpeg", "png"]
-)
-
-if uploaded_file:
-    # Display uploaded image
-    image = Image.open(uploaded_file).convert("RGB").resize((128, 128))
-    st.image(image, caption="🩻 Uploaded X-Ray", use_column_width=True)
-    
-    # Preprocess image to match model input
-    img_array = np.expand_dims(np.array(image) / 255.0, axis=0)  # Shape (1, 128, 128, 3)
-    
-    # Optional: display debug info
-    with st.expander("🔍 Model Input Details"):
-        st.write("Model expects:", model.input_shape)
-        st.write("Input provided:", img_array.shape)
-
-    # ========================================================
-    # 🧠 PREDICTION
-    # ========================================================
-    preds = model.predict(img_array)
-    pred_probs = preds[0]
-    pred_label = CLASS_NAMES[np.argmax(pred_probs)]
-    confidence = np.max(pred_probs)
-
-    # ========================================================
-    # 📊 DISPLAY RESULTS
-    # ========================================================
-    st.markdown("---")
-    st.subheader("🧾 Prediction Result")
-    st.success(f"**Prediction:** {pred_label}")
-    st.metric("Model Confidence", f"{confidence*100:.2f}%")
-    st.progress(float(confidence))
-
-    # Show class probabilities
-    st.subheader("📈 Class Probabilities")
-    prob_df = pd.DataFrame({
-        "Class": CLASS_NAMES,
-        "Probability (%)": pred_probs * 100
-    }).set_index("Class")
-    st.bar_chart(prob_df)
-
-    # ========================================================
-    # 🩺 EXPLANATION
-    # ========================================================
-    st.info(
-        f"The model predicts **{pred_label}** with a confidence of "
-        f"**{confidence*100:.2f}%**.\n\n"
-        f"Please note: This system is designed for educational and research "
-        f"purposes only and should not be used for clinical diagnosis."
-    )
-
-# ============================================================
-# 📘 SIDEBAR: APP INFORMATION
-# ============================================================
-st.sidebar.header("📘 About This App")
-st.sidebar.markdown(
-    """
-    **Developed by:** Team ECE Hackathon 2025  
-    **Model:** CNN (TensorFlow / Keras)  
-    **Input Size:** 128×128×3  
-    **Frameworks:** Streamlit, TensorFlow, PIL  
-
-    ---
-    ⚠️ *This application is for research and educational use only.*
-    """
-)
-
+model.save("/content/final_model.keras")
