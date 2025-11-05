@@ -24,12 +24,12 @@ st.set_page_config(
 st.title("🩺 COVID-19 X-Ray Classification App")
 st.markdown(
     """
-    ### 🔍 Detect COVID-19, Pneumonia, or Normal Chest X-Rays  
-    Upload a **chest X-ray image**, and the trained deep learning model will classify it into one of three categories:
+    ### 🔍 Detect COVID-19 or Normal Chest X-Rays  
+    Upload a **chest X-ray image**, and the trained deep learning model will classify it as either:
     - 🧍 **Normal**
     - 🦠 **COVID-19**
-    - 💨 **Pneumonia**
 
+    *(Pneumonia class removed for simplified demo.)*
     ---
     """
 )
@@ -46,9 +46,9 @@ except Exception as e:
     st.sidebar.error(f"❌ Failed to load model.\n\n**Error:** {e}")
     st.stop()
 
-# Define class labels (adjust if needed)
+# Define original class labels (from training)
 CLASS_NAMES = ['Normal', 'COVID-19', 'Pneumonia']
-st.sidebar.write("**Classes:**", ", ".join(CLASS_NAMES))
+st.sidebar.write("**Model classes:**", ", ".join(CLASS_NAMES))
 st.sidebar.markdown("---")
 
 # ============================================================
@@ -79,33 +79,38 @@ if uploaded_file:
     # ========================================================
     preds = model.predict(img_array)
     pred_probs = preds[0]
-    pred_label = CLASS_NAMES[np.argmax(pred_probs)]
+    original_label = CLASS_NAMES[np.argmax(pred_probs)]
     confidence = np.max(pred_probs)
+
+    # ========================================================
+    # 🔁 CUSTOM LOGIC: SWAP LABELS & REMOVE PNEUMONIA
+    # ========================================================
+    if original_label == "Normal":
+        pred_label = "COVID-19"
+    elif original_label == "COVID-19":
+        pred_label = "Normal"
+    else:
+        pred_label = "Unknown"  # For Pneumonia (ignored)
 
     # ========================================================
     # 📊 DISPLAY RESULTS
     # ========================================================
     st.markdown("---")
     st.subheader("🧾 Prediction Result")
-    st.success(f"**Prediction:** {pred_label}")
-    st.metric("Model Confidence", f"{confidence*100:.2f}%")
-    st.progress(float(confidence))
-
-    # Show class probabilities
-    st.subheader("📈 Class Probabilities")
-    prob_df = pd.DataFrame({
-        "Class": CLASS_NAMES,
-        "Probability (%)": pred_probs * 100
-    }).set_index("Class")
-    st.bar_chart(prob_df)
+    if pred_label == "Unknown":
+        st.warning("⚠️ Image predicted as 'Pneumonia' — excluded from output.")
+    else:
+        st.success(f"**Predicted Label:** {pred_label}")
+        st.metric("Confidence", f"{confidence*100:.2f}%")
+        st.progress(float(confidence))
 
     # ========================================================
     # 🩺 EXPLANATION
     # ========================================================
     st.info(
-        f"The model predicts **{pred_label}** with a confidence of "
-        f"**{confidence*100:.2f}%**.\n\n"
-        f"⚠️ *This app is for research and educational purposes only.*"
+        f"The model predicted **{original_label}**, "
+        f"but per your configuration it is displayed as **{pred_label}**.\n\n"
+        f"⚠️ *This swap is for demo purposes only and not for clinical diagnosis.*"
     )
 
 # ============================================================
@@ -120,7 +125,6 @@ st.sidebar.markdown(
     **Frameworks:** Streamlit, TensorFlow, PIL  
 
     ---
-    ⚠️ *This application is for research and educational use only.*
+    ⚠️ *This application is for demonstration and educational purposes only.*
     """
 )
-
