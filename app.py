@@ -98,7 +98,7 @@ if uploaded_file:
     st.markdown("---")
     st.subheader("🧾 Prediction Result")
     if pred_label == "Unknown":
-        st.warning("⚠️ Image predicted as 'Pneumonia' — excluded from output.")
+        st.warning("")
     else:
         st.success(f"**Predicted Label:** {pred_label}")
         st.metric("Confidence", f"{confidence*100:.2f}%")
