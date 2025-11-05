@@ -28,8 +28,6 @@ st.markdown(
     Upload a **chest X-ray image**, and the trained deep learning model will classify it as either:
     - 🧍 **Normal**
     - 🦠 **COVID-19**
-
-    *(Pneumonia class removed for simplified demo.)*
     ---
     """
 )
