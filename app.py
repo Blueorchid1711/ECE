@@ -102,13 +102,6 @@ if uploaded_file:
         st.metric("Confidence", f"{confidence*100:.2f}%")
         st.progress(float(confidence))
 
-    # ========================================================
-    # 🩺 EXPLANATION
-    # ========================================================
-    st.info(
-        f"The model predicted **{original_label}**, "
-    )
-
 # ============================================================
 # 📘 SIDEBAR: APP INFORMATION
 # ============================================================
