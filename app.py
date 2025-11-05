@@ -24,7 +24,7 @@ st.set_page_config(
 st.title("COVID-19 X-Ray Classification App")
 st.markdown(
     """
-    ### 🔍 Detect COVID-19 or Normal Chest X-Rays  
+    ### Detect COVID-19 or Normal Chest X-Rays  
     Upload a **chest X-ray image**, and the trained deep learning model will classify it as either:
     -  **Normal**
     -  **COVID-19**
