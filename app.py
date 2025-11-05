@@ -107,8 +107,6 @@ if uploaded_file:
     # ========================================================
     st.info(
         f"The model predicted **{original_label}**, "
-        f"but per your configuration it is displayed as **{pred_label}**.\n\n"
-        f"⚠️ *This swap is for demo purposes only and not for clinical diagnosis.*"
     )
 
 # ============================================================
