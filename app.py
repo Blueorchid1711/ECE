@@ -45,7 +45,7 @@ except Exception as e:
     st.stop()
 
 # Define original class labels (from training)
-CLASS_NAMES = ['Normal', 'COVID-19', 'Pneumonia']
+CLASS_NAMES = ['Normal', 'COVID-19']
 st.sidebar.write("**Model classes:**", ", ".join(CLASS_NAMES))
 st.sidebar.markdown("---")
 
