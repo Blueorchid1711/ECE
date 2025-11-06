@@ -1,6 +1,8 @@
 # COVID-19 X-Ray Image Classification System
 
 A Deep Learning–Based Medical Imaging Project using CNN and Streamlit
+<img width="1918" height="871" alt="image" src="https://github.com/user-attachments/assets/651c5643-e769-4fd9-9a97-00dbe9892928" />
+
 
 # Overview
 
